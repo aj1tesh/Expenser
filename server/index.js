@@ -15,9 +15,13 @@ const COLLECTION = "users"
 let db
 
 async function connect() {
+  if (MONGODB_URI === "mongodb://localhost:27017") {
+    console.error("MONGODB_URI not set. Add MONGODB_URI in Render Dashboard → Environment.")
+    return
+  }
   try {
     console.log("Connecting to MongoDB...")
-    const client = new MongoClient(MONGODB_URI)
+    const client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
     await client.connect()
     db = client.db(DB_NAME)
     console.log("Connected to MongoDB")
