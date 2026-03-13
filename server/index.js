@@ -15,13 +15,24 @@ const COLLECTION = "users"
 let db
 
 async function connect() {
-  const client = new MongoClient(MONGODB_URI)
-  await client.connect()
-  db = client.db(DB_NAME)
-  console.log("Connected to MongoDB")
+  try {
+    console.log("Connecting to MongoDB...")
+    const client = new MongoClient(MONGODB_URI)
+    await client.connect()
+    db = client.db(DB_NAME)
+    console.log("Connected to MongoDB")
+  } catch (err) {
+    console.error("MongoDB connection failed:", err.message)
+    console.error(err)
+  }
 }
 
+app.get("/", (req, res) => {
+  res.json({ ok: true, db: !!db })
+})
+
 app.get("/api/data", async (req, res) => {
+  if (!db) return res.status(503).json({ error: "Database not connected" })
   const deviceId = req.query.deviceId
   if (!deviceId) {
     return res.status(400).json({ error: "deviceId required" })
@@ -42,6 +53,7 @@ app.get("/api/data", async (req, res) => {
 })
 
 app.put("/api/data", async (req, res) => {
+  if (!db) return res.status(503).json({ error: "Database not connected" })
   const { deviceId, expenses, monthlyBudget, secretSavingsEntries } = req.body
   if (!deviceId) {
     return res.status(400).json({ error: "deviceId required" })
@@ -68,11 +80,7 @@ app.put("/api/data", async (req, res) => {
   }
 })
 
-connect()
-  .then(() => {
-    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`))
-  })
-  .catch((err) => {
-    console.error("MongoDB connection failed:", err.message)
-    process.exit(1)
-  })
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+  connect()
+})
